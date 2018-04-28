@@ -25,6 +25,7 @@ end
 
 %% Plot solution state at Tend
 filename = ['output/',version,'Solution_nx',num2str(nx),'_',num2str(Size),'km_T',num2str(Tend),'_h.bin'];
+filename = 'output/Cpp_Solution_nx2001_500km_T0.2_h.bin';
 if exist(filename, 'file') == 2
     H_Sol       = fread(fopen(filename,'r'),[nx,nx],'double');
     PlotH( Size, H_Sol, ColorMap, Typography);

@@ -8,8 +8,11 @@ EXE=compute.exe
 
 all: clean compute
 
-compute : compute.o
+compute : clean compute.o
 	$(LD) -o $(EXE) compute.o $(LDFLAGS)
+
+function_tester : clean function_tester.o
+		$(LD) -o function_tester.exe function_tester.o $(LDFLAGS)
 
 
 clean:

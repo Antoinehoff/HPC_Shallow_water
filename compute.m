@@ -27,9 +27,13 @@ Ht = zeros(nx,nx);
 HUt = zeros(nx,nx);
 HVt = zeros(nx,nx);
 
+%save dts
+Nmax = 250;
+dt_array = zeros(1,Nmax);
+
 %% Compute all time-steps
 T = 0; nt = 0;
-while T < Tend;
+while nt < Nmax;
     
     %% Compute the time-step length
     
@@ -90,6 +94,7 @@ while T < Tend;
     T = T + dt;
     nt = nt + 1;
     dt
+    dt_array(nt)=Ht(1);
 end
 
 %% Save solution to disk
@@ -98,6 +103,12 @@ filename = ['output/Matlab_Solution_nx',num2str(nx),'_',num2str(Size),'km','_T',
 fileID = fopen(filename,'w');
 fwrite(fileID,Ht,'double');
 fclose(fileID);
+
+filename = ['output/Matlab_dt_nx',num2str(nx),'_',num2str(Size),'km','_T',num2str(Tend),'_h.bin'];
+fileID = fopen(filename,'w');
+fwrite(fileID,dt_array,'double');
+fclose(fileID);
+
 
 % Stop timer
 time = toc;

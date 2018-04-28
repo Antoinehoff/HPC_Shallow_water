@@ -16,8 +16,8 @@ filename = ['data/Data_nx',num2str(nx),'_',num2str(Size),'km_T',num2str(Tend)]
 Hinit = fread(fopen([filename,'_h.bin'],'r'),[nx,nx],'double');
 Hmatlab = fread(fopen(fmatlab,'r'),[nx,nx],'double');
 Hcpp = fread(fopen(fcpp,'r'),[nx,nx],'double');
-max(max(Hmatlab))
-max(max(Hcpp))
+max(max(Hmatlab)
+max(max(Hcpp)
 norm(Hmatlab-Hcpp)
 %%
 % Load dt_arrays
