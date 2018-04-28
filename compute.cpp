@@ -95,9 +95,7 @@ int main(){
         enforce_BC(Ht, HUt, HVt, nx);
         // Compute a time-step
         C = (.5*dt/dx);
-        cout << C <<endl;
         time_step(H,HU,HV,Zdx,Zdy,Ht,HUt,HVt,C,dt,nx);
-
         // Impose tolerances
         impose_tolerances(Ht,HUt,HVt,numElements);
         if(nt < Nmax) dt_array[nt]=dt;
