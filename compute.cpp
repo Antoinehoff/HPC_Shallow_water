@@ -1,3 +1,6 @@
+/*
+Sequential version in C++ of compute.m code
+*/
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -13,7 +16,7 @@ void load_initial_state(string, double *, int);
 double update_dt(const double *, const double *,
         const double *,double, int);
 // Copy function
-void cpy_to(double *, double *, int);
+void cpy_to(double *, const double *, int);
 // convert 1D list to 2D array
 int to_idx(int, int, int);
 // impose boundary conditions
@@ -21,10 +24,13 @@ void enforce_BC(double *, double *, double *, int);
 // perform one time step computation
 void time_step(double *, double *, double *,
                const double *, const double *,
-               double *, double *, double *,
+               const double *, const double *, const double *,
                double, double, int);
+// impose tolerances
+void impose_tolerances(double *, double *, double *, int);
 
-float const g = 127267.2; //Gravity, 9.82*(3.6)^2*1000 in [km / hr^2]
+
+double const g = 127267.2; //Gravity, 9.82*(3.6)^2*1000 in [km / hr^2]
 
 int main(){
   // Basic Parameters of the simulation :
@@ -55,17 +61,12 @@ int main(){
   HVt = (double *)malloc(memsize);
 
   // Load initial condition from data files
-  cout <<" Loading data from :" << endl;
-  cout <<" "+filename+"_h.bin"+" .."<<  endl;
+  cout <<" Loading data.." << endl;
   load_initial_state(filename+"_h.bin",H,numElements);
-  cout <<" "+filename+"_hu.bin"+" .."<<  endl;
   load_initial_state(filename+"_hu.bin",HU,numElements);
-  cout <<" "+filename+"_hv.bin"+" .."<<  endl;
   load_initial_state(filename+"_hv.bin",HV,numElements);
   // Load topography slopes from data files
-  cout <<" "+filename+"_Zdx.bin"+" .."<<  endl;
   load_initial_state(filename+"_Zdx.bin",Zdx,numElements);
-  cout <<" "+filename+"_Zdy.bin"+" .."<<  endl;
   load_initial_state(filename+"_Zdy.bin",Zdy,numElements);
 
   // Compute the time-step length
@@ -75,30 +76,45 @@ int main(){
   double C = 0.0;
 
   // Evolution loop
-  while (nt < 1) {
-    dt = update_dt(H,HU,HV,dx,numElements);
-    cout <<"dt = "<< dt<<endl;
-    if(T+dt > Tend){
-      dt = Tend-T;
-    }
-    //Print status
-    cout << "Computing for T = " << T+dt << " ("<< 100*(T+dt)/Tend << "%)"<<endl;
+  while (T < Tend) {
+        dt = update_dt(H,HU,HV,dx,numElements);
+        cout <<"dt = "<< dt<<endl;
+        if(T+dt > Tend){
+          dt = Tend-T;
+        }
+        //Print status
+        cout << "Computing for T = " << T+dt << " ("<< 100*(T+dt)/Tend << "%)"<<endl;
 
-    // Copy solution to temp storage and enforce boundary condition
-    cpy_to(Ht,H,numElements);
-    cpy_to(HUt,HU,numElements);
-    cpy_to(HVt,HV,numElements);
-    cout<<HUt[(nx-1)*(nx-1)]<<endl;
-    enforce_BC(Ht, HUt, HVt, nx);
+        // Copy solution to temp storage and enforce boundary condition
+        cpy_to(Ht,H,numElements);
+        cpy_to(HUt,HU,numElements);
+        cpy_to(HVt,HV,numElements);
+        enforce_BC(Ht, HUt, HVt, nx);
+        // Compute a time-step
+        C = (.5*dt/dx);
+        time_step(H,HU,HV,Zdx,Zdy,Ht,HUt,HVt,C,dt,nx);
 
-    C = (.5*dt/dx);
-    time_step(H,HU,HV,Zdx,Zdy,Ht,HUt,HVt,C,dt,nx);
+        // Impose tolerances
+        impose_tolerances(Ht,HUt,HVt,numElements);
 
-    T = T + dt;
-    nt++;
+        T = T + dt;
+        nt++;
+  cout<<Ht[to_idx(48,60,nx)]<<endl;
   }
 
+  // Save solution to disk
+  ostringstream soutfilename;
+  soutfilename <<"output/Cpp_Solution_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<<"_h.bin"<< setprecision(2);
+  string outfilename = soutfilename.str();
+
+  ofstream fout;
+  fout.open(outfilename, std::ios::out | std::ios::binary | std::ios::app);
+  cout<<"Writing solution in "<<outfilename<<endl;
+  fout.write(reinterpret_cast<char*>(&Ht[0]), numElements*sizeof(double));
+  fout.close();
+
   // Free memory space
+  cout<<" Free memory space.."<<endl;
   free(H); free(HU); free(HV); free(Zdx); free(Zdy);
   free(Ht); free(HUt); free(HVt);
 
@@ -110,7 +126,8 @@ void load_initial_state(string filename, double * H, int numElements){
   ifstream fin;
   fin.open(filename, ios::in|ios::binary);
   if(!fin){
-    cout<<" Error, couldn't find file : "<<filename<<endl;
+    cerr<<" Error, couldn't find file : "<<filename<<endl;
+    exit(EXIT_FAILURE);
   }
   fin.read(reinterpret_cast<char*>(&H[0]), numElements*sizeof(double));
   fin.close();
@@ -131,14 +148,14 @@ double update_dt(const double *H, const double *HU,
     return dx/(sqrt(2.0)*mu);
   }
 
-void cpy_to(double *target, double *source, int numElements){
+void cpy_to(double *target, const double *source, int numElements){
   for(int i=0; i<numElements; i++){
     target[i] = source[i];
   }
 }
 
 int to_idx(int x, int y, int nx){
-  return x * (nx-1) + y;
+  return y * (nx) + x;
 }
 
 void enforce_BC(double *Ht, double *HUt, double *HVt, int nx){
@@ -160,36 +177,51 @@ void enforce_BC(double *Ht, double *HUt, double *HVt, int nx){
   }
 }
 
-void time_step(double *H, double *HU, double *HV,
+void time_step( double *H,        double *HU,        double *HV,
                const double *Zdx, const double *Zdy,
-               double *Ht, double *HUt, double *HVt,
-               double C, double dt, int nx){
+               const double *Ht,  const double *HUt, const double *HVt,
+               double C,          double dt,         int nx){
   for(int x=1; x<nx-1; x++){
     for(int y=1; y<nx-1; y++){
-      H[to_idx(x,y,nx)]   = 0.25*( Ht[to_idx(x+1,y,nx)]+Ht[to_idx(x-1,y,nx)]
-                                  +Ht[to_idx(x,y+1,nx)]+Ht[to_idx(x,y-1,nx)])
-                          + C   *( HUt[to_idx(x,y-1,nx)]-HUt[to_idx(x,y+1,nx)]
-                                  +HVt[to_idx(x-1,y,nx)]-HVt[to_idx(x+1,y,nx)]);
+      H[to_idx(x,y,nx)]=
+        0.25*( Ht[to_idx(x+1,y,nx)]+Ht[to_idx(x-1,y,nx)]
+              +Ht[to_idx(x,y+1,nx)]+Ht[to_idx(x,y-1,nx)])+
+        C   *( HUt[to_idx(x,y-1,nx)]-HUt[to_idx(x,y+1,nx)]
+              +HVt[to_idx(x-1,y,nx)]-HVt[to_idx(x+1,y,nx)]);
 
-      HU[to_idx(x,y,nx)]  = 0.25*( HUt[to_idx(x+1,y,nx)]+HUt[to_idx(x-1,y,nx)]
-                                  +HUt[to_idx(x,y+1,nx)]+HUt[to_idx(x,y-1,nx)])
-                                  -dt*g*H[to_idx(x,y,nx)]*Zdx[to_idx(x,y,nx)]
-        + C*( pow(HUt[to_idx(x,y-1,nx)],2)/Ht[to_idx(x,y-1,nx)]
-             +0.5*g*pow(Ht[to_idx(x,y-1,nx)],2)
-             -pow(HUt[to_idx(x,y+1,nx)],2)/Ht[to_idx(x,y+1,nx)]
-             -0.5*g*pow(Ht[to_idx(x,y+1,nx)],2))
-        + C*( HUt[to_idx(x-1,y,nx)]*HVt[to_idx(x-1,y,nx)]/Ht[to_idx(x-1,y,nx)]
-             -HUt[to_idx(x+1,y,nx)]*HVt[to_idx(x+1,y,nx)]/Ht[to_idx(x+1,y,nx)]);
+      HU[to_idx(x,y,nx)]=
+        0.25*( HUt[to_idx(x+1,y,nx)]+HUt[to_idx(x-1,y,nx)]
+              +HUt[to_idx(x,y+1,nx)]+HUt[to_idx(x,y-1,nx)])
+              -dt*g*H[to_idx(x,y,nx)]*Zdx[to_idx(x,y,nx)]
+       +C   *( pow(HUt[to_idx(x,y-1,nx)],2)/Ht[to_idx(x,y-1,nx)]
+              +0.5*g*pow(Ht[to_idx(x,y-1,nx)],2)
+              -pow(HUt[to_idx(x,y+1,nx)],2)/Ht[to_idx(x,y+1,nx)]
+              -0.5*g*pow(Ht[to_idx(x,y+1,nx)],2))
+       +C   *( HUt[to_idx(x-1,y,nx)]*HVt[to_idx(x-1,y,nx)]/Ht[to_idx(x-1,y,nx)]
+              -HUt[to_idx(x+1,y,nx)]*HVt[to_idx(x+1,y,nx)]/Ht[to_idx(x+1,y,nx)]);
 
-      HV[to_idx(x,y,nx)]  = 0.25*( HVt[to_idx(x+1,y,nx)]+HVt[to_idx(x-1,y,nx)]
-                                  +HVt[to_idx(x,y+1,nx)]+HVt[to_idx(x,y-1,nx)])
-                                  -dt*g*H[to_idx(x,y,nx)]*Zdy[to_idx(x,y,nx)]
-       + C*( HUt[to_idx(x,y-1,nx)]*HVt[to_idx(x,y-1,nx)]/Ht[to_idx(x,y-1,nx)]
-            -HUt[to_idx(x,y+1,nx)]*HVt[to_idx(x,y+1,nx)]/Ht[to_idx(x,y+1,nx)])
-       + C*( pow(HVt[to_idx(x-1,y,nx)],2)/Ht[to_idx(x-1,y,nx)]
-            +0.5*g*pow(Ht[to_idx(x-1,y,nx)],2)
-            -pow(HVt[to_idx(x+1,y,nx)],2)/Ht[to_idx(x+1,y,nx)]
-            -0.5*g*pow(Ht[to_idx(x+1,y,nx)],2));
+      HV[to_idx(x,y,nx)]  =
+        0.25*( HVt[to_idx(x+1,y,nx)]+HVt[to_idx(x-1,y,nx)]
+              +HVt[to_idx(x,y+1,nx)]+HVt[to_idx(x,y-1,nx)])
+              -dt*g*H[to_idx(x,y,nx)]*Zdy[to_idx(x,y,nx)]
+       +C   *( HUt[to_idx(x,y-1,nx)]*HVt[to_idx(x,y-1,nx)]/Ht[to_idx(x,y-1,nx)]
+              -HUt[to_idx(x,y+1,nx)]*HVt[to_idx(x,y+1,nx)]/Ht[to_idx(x,y+1,nx)])
+       +C   *( pow(HVt[to_idx(x-1,y,nx)],2)/Ht[to_idx(x-1,y,nx)]
+              +0.5*g*pow(Ht[to_idx(x-1,y,nx)],2)
+              -pow(HVt[to_idx(x+1,y,nx)],2)/Ht[to_idx(x+1,y,nx)]
+              -0.5*g*pow(Ht[to_idx(x+1,y,nx)],2));
+    }
+  }
+}
+
+void impose_tolerances(double *Ht, double *HUt, double *HVt, int numElements){
+  for(int i=0; i<numElements; i++){
+    if(Ht[i]<0){
+      Ht[i] = 1e-5;
+    }
+    if(Ht[i]<= 1e-5){
+      HUt[i] = 0;
+      HVt[i] = 0;
     }
   }
 }

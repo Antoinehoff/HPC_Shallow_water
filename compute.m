@@ -7,11 +7,11 @@ clc; addpath('data/'); tic;
 g           = 127267.200000000;	% Gravity, 9.82*(3.6)^2*1000 in [km / hr^2]
 Size        = 500;              % Size of map, Size*Size [km]
 nx          = 2001;             % Number of cells in each direction on the grid
-Tend        = 0.20;             % Simulation time in hours [hr]
+Tend        = 0.2;             % Simulation time in hours [hr]
 dx          = Size/nx;          % Grid spacening
 
 % Set filename
-filename = ['Data_nx',num2str(nx),'_',num2str(Size),'km_T',num2str(Tend)];
+filename = ['Data_nx',num2str(nx),'_',num2str(Size),'km_T',num2str(Tend)]
 
 % Load initial condition from data files
 H = fread(fopen([filename,'_h.bin'],'r'),[nx,nx],'double');
@@ -29,7 +29,7 @@ HVt = zeros(nx,nx);
 
 %% Compute all time-steps
 T = 0; nt = 0;
-while T < Tend
+while T < Tend;
     
     %% Compute the time-step length
     
@@ -89,12 +89,12 @@ while T < Tend
     
     T = T + dt;
     nt = nt + 1;
-    
+    dt
 end
 
 %% Save solution to disk
 
-filename = ['Solution_nx',num2str(nx),'_',num2str(Size),'km','_T',num2str(Tend),'_h.bin'];
+filename = ['output/Matlab_Solution_nx',num2str(nx),'_',num2str(Size),'km','_T',num2str(Tend),'_h.bin'];
 fileID = fopen(filename,'w');
 fwrite(fileID,Ht,'double');
 fclose(fileID);
