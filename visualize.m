@@ -8,7 +8,7 @@ Size        = 500;              % Size of map, Size*Size [km]
 nx          = 2001;             % Number of cells in each direction on the grid
 Tend        = 0.20;             % Simulation time in hours [hr]
 dx          = Size/nx;          % Grid spacening
-version     = 'Cpp_';
+version     = 'Matlab_';
 
 %% Load solution, colormap and Typography
 ColorMap	= fread(fopen(['figures/Fig_nx',num2str(nx),'_',num2str(Size),'km_ColorMap.bin'],'r'),[nx,nx],'double');

@@ -45,7 +45,7 @@ int main(){
 
   // Data filename :
   ostringstream sfilename;
-  string addpath = "data/";
+  string addpath = "../data/";
   sfilename <<addpath<<"Data_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<< setprecision(2);
   string filename = sfilename.str();
 
@@ -70,17 +70,17 @@ int main(){
   load_initial_state(filename+"_Zdx.bin",Zdx,numElements);
   load_initial_state(filename+"_Zdy.bin",Zdy,numElements);
 
-  // Compute the time-step length
   double T = 0.0;
   int nt = 0;
   double dt = 0.;
   double C = 0.0;
   int Nmax = 250;
-
   double *dt_array;
   dt_array = (double *)malloc(Nmax*sizeof(double));
+
   // Evolution loop
   while (T < Tend) {
+        // Compute the time-step length
         dt = update_dt(H,HU,HV,dx,numElements);
         if(T+dt > Tend){
           dt = Tend-T;
@@ -105,7 +105,7 @@ int main(){
 
   // Save solution to disk
   ostringstream soutfilename;
-  soutfilename <<"output/Cpp_Solution_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<<"_h.bin"<< setprecision(2);
+  soutfilename <<"../output/Cpp_Solution_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<<"_h.bin"<< setprecision(2);
   string outfilename = soutfilename.str();
 
   ofstream fout;
@@ -116,7 +116,7 @@ int main(){
 
   //save dt historic
   ostringstream soutfilename2;
-  soutfilename2 <<"output/Cpp_dt_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<<"_h.bin"<< setprecision(2);
+  soutfilename2 <<"../output/Cpp_dt_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<<"_h.bin"<< setprecision(2);
   outfilename = soutfilename2.str();
   fout.open(outfilename, std::ios::out | std::ios::binary);
   cout<<"Writing solution in "<<outfilename<<endl;

@@ -93,7 +93,6 @@ while nt < Nmax;
     
     T = T + dt;
     nt = nt + 1;
-    dt
     dt_array(nt)=Ht(1);
 end
 
