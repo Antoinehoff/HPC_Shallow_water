@@ -35,7 +35,7 @@ int main(){
   double  dx          = ((float)Size)/((float)nx);    // Grid spacening
   int     numElements = nx*nx;                        // Total number of elements
   size_t  memsize     = numElements * sizeof(double); // Memory size of one array
-  int     Ntmax        = 1;                           // Choose the maximum of iteration
+  int     Ntmax       = 1;                            // Choose the maximum of iteration
   // Simulation variables HOST
   double  T           = 0.0;                          // Time
   int     nt          = 0;                            // Iteration counter
@@ -155,9 +155,10 @@ int main(){
 
   // Timer end
   timer = clock()-timer;
-  timer = (double)(timer)/CLOCKS_PER_SEC;
-  cout<<"Ellapsed time : "<<timer/60<<"min "<<timer%60<<"sec"<<endl;
-
+  timer = (double)(timer)/CLOCKS_PER_SEC*1000;
+  cout  <<  "Ellapsed time : "  <<  timer/60000  <<  "min "
+        <<  timer/1000  <<  "s " << timer%1000 << "ms" << endl;
+  std::cout << timer<< " " << CLOCKS_PER_SEC << '\n';
   return 0;
 }
 
