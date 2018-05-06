@@ -7,6 +7,7 @@ Paralleel version in CUDA/C++ of compute.cpp code
 #include <cmath>
 #include <string>
 #include <sstream>
+#include "kernels.cuh"
 
 using namespace std;
 
