@@ -20,7 +20,7 @@ void load_initial_state(string filename, double * H, int numElements){
 }
 
 double update_dt(const double *H, const double *HU,
-      const double *HV, double dx, int numElements){
+                 const double *HV, double dx, int numElements){
   //Compute the max of mu and give dt back
   double mu = 0.0;
   double newmu = 0.0;
@@ -67,7 +67,7 @@ void enforce_BC(double *Ht, double *HUt, double *HVt, int nx){
   }
 }
 
-void FV_time_step( double *H,        double *HU,        double *HV,
+void time_step( double *H,        double *HU,        double *HV,
                const double *Zdx, const double *Zdy,
                const double *Ht,  const double *HUt, const double *HVt,
                double C,          double dt,         int nx){

@@ -45,8 +45,7 @@ while nt < Nmax;
     
     %% Print status
     
-    disp(['Computing T: ',num2str(T+dt),'. ',num2str(100*(T+dt)/Tend),'%'])
-    
+    disp(['Computing T: ',num2str(T+dt),'. ',num2str(100*(T+dt)/Tend),'% dt = ', num2str(dt),' nt = ',num2str(nt)])
     %% Copy solution to temp storage and enforce boundary condition
     
     Ht = H;
@@ -93,7 +92,7 @@ while nt < Nmax;
     
     T = T + dt;
     nt = nt + 1;
-    dt_array(nt)=Ht(1);
+    dt_array(nt)=dt;
 end
 
 %% Save solution to disk
