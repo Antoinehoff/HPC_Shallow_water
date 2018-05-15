@@ -22,12 +22,7 @@ int main(){
   cout << "dx = " << dx << endl;
   int numElements = nx*nx;
   size_t memsize = numElements * sizeof(double);
-
-  // Data filename :
-  ostringstream sfilename;
-  string addpath = "../data/";
-  sfilename <<addpath<<"Data_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<< setprecision(2);
-  string filename = sfilename.str();
+  string  datapath     = "../data/";                  // Path for the data
 
   // Allocate memory for Computing
   cout <<" Allocating memory .."<<endl;
@@ -41,26 +36,20 @@ int main(){
   HUt   = (double *)malloc(memsize);
   HVt = (double *)malloc(memsize);
 
-  // Load initial condition from data files
-  cout <<" Loading data.." << endl;
-  load_initial_state(filename+"_h.bin",H,numElements);
-  load_initial_state(filename+"_hu.bin",HU,numElements);
-  load_initial_state(filename+"_hv.bin",HV,numElements);
-  // Load topography slopes from data files
-  load_initial_state(filename+"_Zdx.bin",Zdx,numElements);
-  load_initial_state(filename+"_Zdy.bin",Zdy,numElements);
+  // Load initial state on host memory
+  load_initial_data(H, HU, HV, Zdx, Zdy, datapath, nx, Size, Tend, numElements);
 
   double  T     = 0.0;
   int     nt    = 0;
   double  dt    = 0.;
   double  C     = 0.0;
-  int     Nmax  = 250;
+  int     Ntmax  = 250;
   double *dt_array;
-  dt_array = (double *)malloc(Nmax*sizeof(double));
+  dt_array = (double *)malloc(Ntmax*sizeof(double));
 
   // Evolution loop
   cout  <<  " Computing.."  <<  endl;
-  while (nt < Nmax) {
+  while (T<Tend and nt < Ntmax) {
         // Compute the time-step length
         dt = update_dt(H,HU,HV,dx,numElements);
         if(T+dt > Tend){
@@ -79,7 +68,7 @@ int main(){
         FV_time_step(H,HU,HV,Zdx,Zdy,Ht,HUt,HVt,C,dt,nx);
         // Impose tolerances
         impose_tolerances(H,HU,HV,numElements);
-        if(nt < Nmax) dt_array[nt]=dt;
+        if(nt < Ntmax) dt_array[nt]=dt;
         T = T + dt;
         nt++;
   }
@@ -101,7 +90,7 @@ int main(){
   outfilename = soutfilename2.str();
   fout.open(outfilename, std::ios::out | std::ios::binary);
   cout<<"  Writing historic in "<<outfilename<<endl;
-  fout.write(reinterpret_cast<char*>(&dt_array[0]), Nmax*sizeof(double));
+  fout.write(reinterpret_cast<char*>(&dt_array[0]), Ntmax*sizeof(double));
   fout.close();
 
   // Free memory space

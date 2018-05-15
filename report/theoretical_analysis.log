@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.14159265-2.6-0.99992 (TeX Live 2015/Debian) (preloaded format=xelatex 2018.4.11)  14 MAY 2018 09:52
+This is XeTeX, Version 3.14159265-2.6-0.99992 (TeX Live 2015/Debian) (preloaded format=xelatex 2018.4.11)  14 MAY 2018 13:58
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -312,11 +312,11 @@ LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <12> not available
 AED: lastpage setting LastPage
 [4] (./theoretical_analysis.aux) ) 
 Here is how much of TeX's memory you used:
- 3093 strings out of 495579
- 40424 string characters out of 6187322
+ 3096 strings out of 495579
+ 40457 string characters out of 6187322
  103155 words of memory out of 5000000
- 6315 multiletter control sequences out of 15000+600000
- 12448 words of font info for 49 fonts, out of 8000000 for 9000
+ 6317 multiletter control sequences out of 15000+600000
+ 12784 words of font info for 51 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  27i,10n,43p,932b,271s stack positions out of 5000i,500n,10000p,200000b,80000s
 

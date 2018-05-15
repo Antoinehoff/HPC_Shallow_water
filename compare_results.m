@@ -9,32 +9,18 @@ dx          = Size/nx;          % Grid spacening
 fname   = "Solution_nx"+num2str(nx)+"_500km_T0.2_h.bin";
 path    = "output/";
 fmatlab = path + "Matlab_" + fname;
-fcpp    = path + "Cpp_" + fname;
+fcpp    = path + "Cpp_"    + fname;
+fcuda   = path + "CUDA_"   + fname;
 %% Solution analysis
 % Load initial state and Matlab - Cpp solutions
 filename = ['data/Data_nx',num2str(nx),'_',num2str(Size),'km_T',num2str(Tend)]
-Hinit = fread(fopen([filename,'_h.bin'],'r'),[nx,nx],'double');
-Hmatlab = fread(fopen(fmatlab,'r'),[nx,nx],'double');
-Hcpp = fread(fopen(fcpp,'r'),[nx,nx],'double');
+Hinit    = fread(fopen([filename,'_h.bin'],'r'),[nx,nx],'double');
+Hmatlab  = fread(fopen(fmatlab,'r'),[nx,nx],'double');
+Hcpp     = fread(fopen(fcpp,'r'),   [nx,nx],'double');
+Hcuda    = fread(fopen(fcuda,'r'),  [nx,nx],'double');
 H_err = Hmatlab-Hcpp;
-% aggreg_err = zeros(1,nx);
-% aggreg_sol = zeros(1,nx);
-% for i=[1:nx]
-%     aggreg_err(i) = sum(H_err(i,:));
-%     aggreg_sol(i) = sum(Hmatlab(i,:));
-% end
-% 
-% figure
-% hold on;
-% yyaxis left
-% plot(0:nx-1,aggreg_err)
-% yyaxis right
-% plot(0:nx-1,aggreg_sol)
-% title("1D Aggregated error")
-% grid on
-% legend("Aggregated error","Aggregated solution")
-% xlim([0,nx-1])
 
+%% Plot error
 figure
 contourf(H_err)
 title("Error on the last step (nt = 250)")

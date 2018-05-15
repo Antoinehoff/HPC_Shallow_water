@@ -1,6 +1,7 @@
 objects= compute_parallel.o kernels.o functions.o
+test_objects= function_tester.exe kernels.o tests.o functions.o
 NVCC=nvcc
-opt= -O2 -g -G -std=c++11
+opt= -O3 -g -G -std=c++11
 ARCH= -arch=sm_30
 LIBS=
 EXE=compute_parallel.exe
@@ -18,8 +19,11 @@ compute_parallel.o : compute_parallel.cu
 functions.o : functions.cpp
 	$(NVCC) $(opt) $(ARCH) -c functions.cpp ${NVCCFLAGS}
 
-function_tester : function_tester kernels.o
-	$(NVCC) function_tester.cu -o function_tester.exe kernels.o ${NVCCFLAGS}
+function_tester : function_tester kernels.o functions.o tests.o
+	$(NVCC) function_tester.cu -o $(test_objects) ${NVCCFLAGS}
+
+tests.o : tests.cu
+	$(NVCC) $(opt) $(ARCH) -c tests.cu ${NVCCFLAGS}
 
 clean :
 	rm -f *.exe *.o *~

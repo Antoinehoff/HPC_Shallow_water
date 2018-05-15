@@ -34,62 +34,62 @@ dt_array = zeros(1,Nmax);
 %% Compute all time-steps
 T = 0; nt = 0;
 while nt < Nmax;
-    
+
     %% Compute the time-step length
-    
+
     mu = sqrt( max(abs(HU./H-sqrt(H*g)),abs(HU./H+sqrt(H*g))).^2 + max(abs(HV./H-sqrt(H*g)),abs(HV./H+sqrt(H*g))).^2 );
     dt = dx/(sqrt(2)*max(mu(:)));
     if T+dt > Tend
         dt = Tend-T;
     end
-    
+
     %% Print status
-    
+
     disp(['Computing T: ',num2str(T+dt),'. ',num2str(100*(T+dt)/Tend),'% dt = ', num2str(dt),' nt = ',num2str(nt)])
     %% Copy solution to temp storage and enforce boundary condition
-    
+
     Ht = H;
     HUt = HU;
     HVt = HV;
-    
+
     Ht(1,:) = Ht(2,:);
     Ht(end,:) = Ht(end-1,:);
     Ht(:,1) = Ht(:,2);
     Ht(:,end) = Ht(:,end-1);
-    
+
     HUt(1,:) = HUt(2,:);
     HUt(end,:) = HUt(end-1,:);
     HUt(:,1) = HUt(:,2);
     HUt(:,end) = HUt(:,end-1);
-    
+
     HVt(1,:) = HVt(2,:);
     HVt(end,:) = HVt(end-1,:);
     HVt(:,1) = HVt(:,2);
     HVt(:,end) = HVt(:,end-1);
-    
+
     %% Compute a time-step
-    
+
     C = (0.5*dt/dx);
-    
+
     H(2:nx-1,2:nx-1,1) = 0.25*(Ht(2:nx-1,1:nx-2)+Ht(2:nx-1,3:nx)+Ht(1:nx-2,2:nx-1)+Ht(3:nx,2:nx-1)) ...
         + C*( HUt(2:nx-1,1:nx-2) - HUt(2:nx-1,3:nx) + HVt(1:nx-2,2:nx-1) - HVt(3:nx,2:nx-1) );
-    
+
     HU(2:nx-1,2:nx-1) = 0.25*(HUt(2:nx-1,1:nx-2)+HUt(2:nx-1,3:nx)+HUt(1:nx-2,2:nx-1)+HUt(3:nx,2:nx-1)) - dt*g*H(2:nx-1,2:nx-1).*Zdx(2:nx-1,2:nx-1) ...
         + C*( HUt(2:nx-1,1:nx-2).^2./Ht(2:nx-1,1:nx-2) + 0.5*g*Ht(2:nx-1,1:nx-2).^2 - HUt(2:nx-1,3:nx).^2./Ht(2:nx-1,3:nx) - 0.5*g*Ht(2:nx-1,3:nx).^2 ) ...
         + C*( HUt(1:nx-2,2:nx-1).*HVt(1:nx-2,2:nx-1)./Ht(1:nx-2,2:nx-1) - HUt(3:nx,2:nx-1).*HVt(3:nx,2:nx-1)./Ht(3:nx,2:nx-1) );
-    
+
     HV(2:nx-1,2:nx-1) = 0.25*(HVt(2:nx-1,1:nx-2)+HVt(2:nx-1,3:nx)+HVt(1:nx-2,2:nx-1)+HVt(3:nx,2:nx-1)) - dt*g*H(2:nx-1,2:nx-1).*Zdy(2:nx-1,2:nx-1)  ...
         + C*( HUt(2:nx-1,1:nx-2).*HVt(2:nx-1,1:nx-2)./Ht(2:nx-1,1:nx-2) - HUt(2:nx-1,3:nx).*HVt(2:nx-1,3:nx)./Ht(2:nx-1,3:nx) ) ...
         + C*( HVt(1:nx-2,2:nx-1).^2./Ht(1:nx-2,2:nx-1) + 0.5*g*Ht(1:nx-2,2:nx-1).^2 - HVt(3:nx,2:nx-1).^2./Ht(3:nx,2:nx-1) - 0.5*g*Ht(3:nx,2:nx-1).^2  );
-    
+
     %% Impose tolerances
-    
+
     Ht(Ht<0) = 0.00001;
     HUt(Ht<=0.0001) = 0;
     HVt(Ht<=0.0001) = 0;
-    
+
     %% Update time T
-    
+
     T = T + dt;
     nt = nt + 1;
     dt_array(nt)=dt;

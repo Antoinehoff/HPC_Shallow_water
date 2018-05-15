@@ -8,6 +8,26 @@
 
 using namespace std;
 
+void load_initial_data(double *H,double *HU,double *HV,double *Zdx,double *Zdy,
+string datapath,int nx,int Size,float Tend,int numElements){
+  // Filestream variables
+  string  identificator;                              // Identificator of the simulation
+  ostringstream sfilename;                            // Identificator auxiliary
+  // Data filename :
+  sfilename <<  datapath <<  "Data_nx" <<  to_string(nx) <<  "_"
+            <<  to_string(Size) <<  "km_T"  <<  Tend  <<  setprecision(2);
+  identificator = sfilename.str();
+  cout << " Simulation identificator : "  <<  identificator  << endl;
+  // Load initial condition from data files
+  cout <<" Loading data on host memory.." << endl;
+  load_initial_state(identificator + "_h.bin",   H,    numElements);
+  load_initial_state(identificator + "_hu.bin",  HU,   numElements);
+  load_initial_state(identificator + "_hv.bin",  HV,   numElements);
+  // Load topography slopes from data files
+  load_initial_state(identificator + "_Zdx.bin", Zdx,  numElements);
+  load_initial_state(identificator + "_Zdy.bin", Zdy,  numElements);
+}
+
 void load_initial_state(string filename, double * H, int numElements){
   ifstream fin;
   fin.open(filename, ios::in|ios::binary);
@@ -20,7 +40,7 @@ void load_initial_state(string filename, double * H, int numElements){
 }
 
 double update_dt(const double *H, const double *HU,
-      const double *HV, double dx, int numElements){
+                 const double *HV, double dx, int numElements){
   //Compute the max of mu and give dt back
   double mu = 0.0;
   double newmu = 0.0;

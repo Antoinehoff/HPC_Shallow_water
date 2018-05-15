@@ -113,7 +113,7 @@ Before starting the parallelization of our sequential code, it is important to p
 	\texttt{FV\_time\_step} 	& $57608	\pm	1551.2$ & $88.8071	\pm	0.1638\%$ \\ 
 	\texttt{impose\_tolerances} & $729.33	\pm	21.124$ & $1.1245	\pm	0.0239\%$ \\ 
 	Save output 				& $25.334	\pm	1.4030$	& $0.0390	\pm 0.0014\%$ \\ 
-	Free memory space 			& $9.1721	\pm	0.3275$ & $0.0141	\pm 0.0002\%$\\
+	Free memory space 			& $9.1721	\pm	0.3275$ & $0.0141	\pm 0.0002\%$ \\
 	\hline
 \end{tabular} 
 \caption{Results for $10$ manual profiling of the sequential C++ code for $250$ step.}
@@ -123,8 +123,11 @@ Before starting the parallelization of our sequential code, it is important to p
 \section{Parallelism Preview with CUDA}
 The GPU programming language CUDA has been chosen to implement a parallel version of the C++ sequential code.\\The parallelization of the main \texttt{while} loop of Algorithm \ref{alg:sequ} can obviously not be parallelized since it needs the results of the previous iteration at each steps. It is however not the case for the functions called inside the loop, i.e. \texttt{new\_dt}, \texttt{enforce\_BC}, \texttt{FV\_time\_step} and \texttt{impose\_tolerances}. 
 \subsection{Parallelization of \texttt{FV\_time\_step}} 
-As demonstrated on Table \ref{tab:manual_sequ_profiling}, the \texttt{FV\_time\_step} function has the greatest potential of performance increase.\\ Since the treated variables are two dimensional arrays, the most natural way to parallelize this function is to divide the grid in to $N_b$ regions. Each region will be treated by one block containing $N_t=N/N_b$ threads.
-However the process updates the variables $H,HU$ and $HV$ by performing a computation similar to a second degree derivative finite difference scheme, thus some data must be transfered between the blocks on their borders.
+As demonstrated on Table \ref{tab:manual_sequ_profiling}, the \texttt{FV\_time\_step} function has the greatest potential of performance increase.\\ Since the treated variables are two dimensional arrays, the most natural way to parallelize this function is to divide the grid in to $N_b = \texttt{gridDim.x}$ regions and to declare a two dimensional grid composed of two dimensional blocks s.t.. Each region will be treated by one block containing $N_t=N/N_b$ threads. However in our case, the dimensions of the arrays are either $2001\times2001$, $4001\times4001$ or $8001\times8001$, dimensions that cannot be easily split into regular squared domains. For the instance, the parallel program will add an additional block which will execute the last processes which are not dividable by our .\\
+It is important also to be aware that the process updates the variables $H,HU$ and $HV$ by performing a computation similar to a second degree derivative finite difference scheme from the temporary variables $H_t.HU_t,HV_t$. If the blocks have entirely access to those variables, the parallel computation of the finite volume step should not show difficulties. It can be however costly to load entirely all the variables at each time step but this has to be experimented later on.
+
+\subsection{Parallelization of \texttt{new\_dt}}
+The \texttt{new\_dt} function is aimed to compute the new time step respecting the CFL condition of the problem. This process is done by finding the maximum in an element-wise computation on the two dimensional arrays $H,HU,HV$. The minimal complexity of a parallel maximum algorithm is $O(n\log n)$ which is already a significant improve in comparison to the sequential one which is $O(n^2)$. However, since this process take only arround $5\%$ of the computational time, the importance of such an optimization should be evaluated after parallelizing the finite volume step function.
 \bibliographystyle{ieeetr}
 
 \end{document}

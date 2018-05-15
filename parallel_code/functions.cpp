@@ -8,6 +8,26 @@
 
 using namespace std;
 
+void load_initial_data(double *H,double *HU,double *HV,double *Zdx,double *Zdy,
+string datapath,int nx,int Size,float Tend,int numElements){
+  // Filestream variables
+  string  identificator;                              // Identificator of the simulation
+  ostringstream sfilename;                            // Identificator auxiliary
+  // Data filename :
+  sfilename <<  datapath <<  "Data_nx" <<  to_string(nx) <<  "_"
+            <<  to_string(Size) <<  "km_T"  <<  Tend  <<  setprecision(2);
+  identificator = sfilename.str();
+  cout << " Simulation identificator : "  <<  identificator  << endl;
+  // Load initial condition from data files
+  cout <<" Loading data on host memory.." << endl;
+  load_initial_state(identificator + "_h.bin",   H,    numElements);
+  load_initial_state(identificator + "_hu.bin",  HU,   numElements);
+  load_initial_state(identificator + "_hv.bin",  HV,   numElements);
+  // Load topography slopes from data files
+  load_initial_state(identificator + "_Zdx.bin", Zdx,  numElements);
+  load_initial_state(identificator + "_Zdy.bin", Zdy,  numElements);
+}
+
 void load_initial_state(string filename, double * H, int numElements){
   ifstream fin;
   fin.open(filename, ios::in|ios::binary);
@@ -67,7 +87,7 @@ void enforce_BC(double *Ht, double *HUt, double *HVt, int nx){
   }
 }
 
-void time_step( double *H,        double *HU,        double *HV,
+void FV_time_step( double *H,        double *HU,        double *HV,
                const double *Zdx, const double *Zdy,
                const double *Ht,  const double *HUt, const double *HVt,
                double C,          double dt,         int nx){

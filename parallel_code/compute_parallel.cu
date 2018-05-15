@@ -21,7 +21,7 @@ int main(){
   double  dx          = ((float)Size)/((float)nx);    // Grid spacening
   int     numElements = nx*nx;                        // Total number of elements
   size_t  memsize     = numElements * sizeof(double); // Memory size of one array
-  int     Ntmax       = 1;                            // Choose the maximum of iteration
+  int     Ntmax       = 250;                            // Choose the maximum of iteration
   // Simulation variables HOST
   double  T           = 0.0;                          // Time
   int     nt          = 0;                            // Iteration counter
@@ -34,18 +34,9 @@ int main(){
   double *d_H,    *d_HU,  *d_HV;                      // Water height and x,y speeds
   double *d_Ht,   *d_HUt, *d_HVt;                     // Temporary memory of H HU and HV
   double *d_Zdx,  *d_Zdy;                             // Topology of the map
-  // Filestream variables
-  string  datapath     = "../data/";                  // Path for the data
-  string  identificator;                              // Identificator of the simulation
-  ostringstream sfilename;                            // Identificator auxiliary
   // Tracking variables
   double *dt_array;                                   // Record the evolution time steps
-
-  // Data filename :
-  sfilename <<  datapath <<  "Data_nx" <<  to_string(nx) <<  "_"
-            <<  to_string(Size) <<  "km_T"  <<  Tend  <<  setprecision(2);
-  identificator = sfilename.str();
-  cout << " Simulation identificator : "  <<  identificator  << endl;
+  string  datapath     = "../data/";                  // Path for the data
 
   // Allocate host memory for loading the initial conditions
   cout << " Allocating host memory .."  <<  endl;
@@ -56,14 +47,8 @@ int main(){
   Zdx = (double *)malloc(memsize);  Zdy = (double *)malloc(memsize);
   dt_array = (double *)malloc(Ntmax*sizeof(double));
 
-  // Load initial condition from data files
-  cout <<" Loading data on host memory.." << endl;
-  load_initial_state(identificator + "_h.bin",   H,    numElements);
-  load_initial_state(identificator + "_hu.bin",  HU,   numElements);
-  load_initial_state(identificator + "_hv.bin",  HV,   numElements);
-  // Load topography slopes from data files
-  load_initial_state(identificator + "_Zdx.bin", Zdx,  numElements);
-  load_initial_state(identificator + "_Zdy.bin", Zdy,  numElements);
+  // Load initial state on host memory
+  load_initial_data(H, HU, HV, Zdx, Zdy, datapath, nx, Size, Tend, numElements);
 
   // Allocate device memory for computing
   cout  <<  " Allocating device memory on host.." <<  endl;
@@ -84,6 +69,16 @@ int main(){
   cudaMemcpy(d_HUt, HUt,  memsize,  cudaMemcpyHostToDevice);
   cudaMemcpy(d_HVt, HVt,  memsize,  cudaMemcpyHostToDevice);
 
+  // One dimensional grid block threads version :
+  int Nthreadx = 128;
+  dim3 threadsPerBlock(Nthreadx);
+  int Nblockx = ceil(nx*nx*1.0/Nthreadx);
+  dim3 numBlocks(Nblockx);
+  cout << "1D parallel model description :"<<endl;
+  cout <<"\t Number of elements \t\t:" << nx*nx << endl;
+  cout <<"\t Number of blocks needed \t:" << Nblockx << "x" << 1 << endl;
+  cout <<"\t Nthreads \t\t\t:" << Nblockx*Nthreadx <<endl;
+
   // Evolution loop
   while (T < Tend and nt < Ntmax) {
         // Compute the time-step length
@@ -92,23 +87,27 @@ int main(){
           dt = Tend-T;
         }
         //Print status
-        cout  << "Computing for T=" << T+dt << " ("<< 100*(T+dt)/Tend << "%), "
+        cout  << " Computing for T=" << T+dt << " ("<< 100*(T+dt)/Tend << "%), "
               <<  "dt="             << dt   << endl;
         // Copy solution to temp storage and enforce boundary condition
-        cpy_to(Ht,H,numElements);
-        cpy_to(HUt,HU,numElements);
-        cpy_to(HVt,HV,numElements);
-        enforce_BC(Ht, HUt, HVt, nx);
+        //cpy_to(Ht,H,numElements);
+        //cpy_to(HUt,HU,numElements);
+        //cpy_to(HVt,HV,numElements);
+        //enforce_BC(Ht, HUt, HVt, nx);
         // Compute a time-step
         C = (.5*dt/dx);
-        time_step(H,HU,HV,Zdx,Zdy,Ht,HUt,HVt,C,dt,nx);
+        //FV_time_step(H,HU,HV,Zdx,Zdy,Ht,HUt,HVt,C,dt,nx);
+        FV_time_step_kernel<<<Nblockx,Nthreadx>>>(d_H,d_HU,d_HV,d_Zdx,d_Zdy,d_Ht,d_HUt,d_HVt,C,dt,nx);
         // Impose tolerances
-        impose_tolerances(Ht,HUt,HVt,numElements);
+        //impose_tolerances(Ht,HUt,HVt,numElements);
         if(nt < Ntmax) dt_array[nt]=dt;
         T = T + dt;
         nt++;
   }
 
+  // Copy device result to the host memory
+  cout << " Copy the output data from the CUDA device to the host memory" << endl;
+  cudaMemcpy(Ht, d_Ht, memsize, cudaMemcpyDeviceToHost);
   // Save solution to disk
   ostringstream soutfilename;
   soutfilename <<"../output/CUDA_Solution_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<<"_h.bin"<< setprecision(2);
@@ -116,16 +115,16 @@ int main(){
 
   ofstream fout;
   fout.open(outfilename, std::ios::out | std::ios::binary);
-  cout<<"Writing solution in "<<outfilename<<endl;
+  cout<<" Writing solution in "<<outfilename<<endl;
   fout.write(reinterpret_cast<char*>(&Ht[0]), numElements*sizeof(double));
   fout.close();
 
   //save dt historic
   ostringstream soutfilename2;
-  soutfilename2 <<"../output/Cpp_dt_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<<"_h.bin"<< setprecision(2);
+  soutfilename2 <<"../output/CUDA_dt_nx"<<to_string(nx)<<"_"<<to_string(Size)<<"km_T"<<Tend<<"_h.bin"<< setprecision(2);
   outfilename = soutfilename2.str();
   fout.open(outfilename, std::ios::out | std::ios::binary);
-  cout<<"Writing solution in "<<outfilename<<endl;
+  cout<<" Writing solution in "<<outfilename<<endl;
   fout.write(reinterpret_cast<char*>(&dt_array[0]), Ntmax*sizeof(double));
   fout.close();
 
@@ -144,6 +143,5 @@ int main(){
   timer = (double)(timer)/CLOCKS_PER_SEC*1000;
   cout  <<  "Ellapsed time : "  <<  timer/60000  <<  "min "
         <<  timer/1000  <<  "s " << timer%1000 << "ms" << endl;
-  std::cout << timer<< " " << CLOCKS_PER_SEC << '\n';
   return 0;
 }

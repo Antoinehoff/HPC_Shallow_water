@@ -8,7 +8,7 @@ Size        = 500;              % Size of map, Size*Size [km]
 nx          = 2001;             % Number of cells in each direction on the grid
 Tend        = 0.20;             % Simulation time in hours [hr]
 dx          = Size/nx;          % Grid spacening
-version     = 'Matlab_';
+version     = 'CUDA_';
 
 %% Load solution, colormap and Typography
 ColorMap	= fread(fopen(['figures/Fig_nx',num2str(nx),'_',num2str(Size),'km_ColorMap.bin'],'r'),[nx,nx],'double');
@@ -25,7 +25,6 @@ end
 
 %% Plot solution state at Tend
 filename = ['output/',version,'Solution_nx',num2str(nx),'_',num2str(Size),'km_T',num2str(Tend),'_h.bin'];
-filename = 'output/Cpp_Solution_nx2001_500km_T0.2_h.bin';
 if exist(filename, 'file') == 2
     H_Sol       = fread(fopen(filename,'r'),[nx,nx],'double');
     PlotH( Size, H_Sol, ColorMap, Typography);
