@@ -20,6 +20,7 @@
 %\usepackage[myheadings]{fullpage}
 \usepackage{fancyhdr}
 \usepackage{lastpage}
+\usepackage{hyperref}
 
 \pagestyle{fancy}
 \fancyhf{}
@@ -128,6 +129,9 @@ It is important also to be aware that the process updates the variables $H,HU$ a
 
 \subsection{Parallelization of \texttt{new\_dt}}
 The \texttt{new\_dt} function is aimed to compute the new time step respecting the CFL condition of the problem. This process is done by finding the maximum in an element-wise computation on the two dimensional arrays $H,HU,HV$. The minimal complexity of a parallel maximum algorithm is $O(n\log n)$ which is already a significant improve in comparison to the sequential one which is $O(n^2)$. However, since this process take only arround $5\%$ of the computational time, the importance of such an optimization should be evaluated after parallelizing the finite volume step function.
+
+\section*{Appendix}
+Since I am not familiar at all with c4sciences repository management, the code can be found on this \href{https://github.com/Antoinehoff/HPC_Shallow_water}{Github repository}.
 \bibliographystyle{ieeetr}
 
 \end{document}

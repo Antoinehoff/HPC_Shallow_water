@@ -43,7 +43,7 @@ int main(){
   int     nt    = 0;
   double  dt    = 0.;
   double  C     = 0.0;
-  int     Ntmax  = 250;
+  int     Ntmax  = 100;
   double *dt_array;
   dt_array = (double *)malloc(Ntmax*sizeof(double));
 

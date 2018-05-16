@@ -28,7 +28,7 @@ HUt = zeros(nx,nx);
 HVt = zeros(nx,nx);
 
 %save dts
-Nmax = 250;
+Nmax = 100;
 dt_array = zeros(1,Nmax);
 
 %% Compute all time-steps

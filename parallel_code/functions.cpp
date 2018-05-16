@@ -65,25 +65,26 @@ int to_idx(int x, int y, int nx){
 }
 
 void enforce_BC(double *Ht, double *HUt, double *HVt, int nx){
+  
   for(int i=0; i<nx; ++i){
-    Ht[to_idx(0,i,nx)]  = Ht[to_idx(1,i,nx)];
-    HUt[to_idx(0,i,nx)]  = HUt[to_idx(1,i,nx)];
-    HVt[to_idx(0,i,nx)]  = HVt[to_idx(1,i,nx)];
+    Ht  [to_idx(0,    i,    nx)] = Ht  [to_idx(1,     i,    nx)];
+    HUt [to_idx(0,    i,    nx)] = HUt [to_idx(1,     i,    nx)];
+    HVt [to_idx(0,    i,    nx)] = HVt [to_idx(1,     i,    nx)];
   }
   for(int i=0; i<nx; ++i){
-    Ht[to_idx(nx-1,i,nx)] = Ht[to_idx(nx-2,i,nx)];
-    HUt[to_idx(nx-1,i,nx)] = HUt[to_idx(nx-2,i,nx)];
-    HVt[to_idx(nx-1,i,nx)] = HVt[to_idx(nx-2,i,nx)];
+    Ht  [to_idx(nx-1, i,    nx)]  = Ht  [to_idx(nx-2, i,    nx)];
+    HUt [to_idx(nx-1, i,    nx)]  = HUt [to_idx(nx-2, i,    nx)];
+    HVt [to_idx(nx-1, i,    nx)]  = HVt [to_idx(nx-2, i,    nx)];
   }
   for(int i=0; i<nx; ++i){
-    Ht[to_idx(i,0,nx)]  = Ht[to_idx(i,1,nx)];
-    HUt[to_idx(i,0,nx)]  = HUt[to_idx(i,1,nx)];
-    HVt[to_idx(i,0,nx)]  = HVt[to_idx(i,1,nx)];
+    Ht  [to_idx(i,    0,    nx)]  = Ht  [to_idx(i,    1,    nx)];
+    HUt [to_idx(i,    0,    nx)]  = HUt [to_idx(i,    1,    nx)];
+    HVt [to_idx(i,    0,    nx)]  = HVt [to_idx(i,    1,    nx)];
   }
   for(int i=0; i<nx; ++i){
-    Ht[to_idx(i,nx-1,nx)] = Ht[to_idx(i,nx-2,nx)];
-    HUt[to_idx(i,nx-1,nx)] = HUt[to_idx(i,nx-2,nx)];
-    HVt[to_idx(i,nx-1,nx)] = HVt[to_idx(i,nx-2,nx)];
+    Ht  [to_idx(i,    nx-1, nx)]  = Ht  [to_idx(i,    nx-2, nx)];
+    HUt [to_idx(i,    nx-1, nx)]  = HUt [to_idx(i,    nx-2, nx)];
+    HVt [to_idx(i,    nx-1, nx)]  = HVt [to_idx(i,    nx-2, nx)];
   }
 }
 

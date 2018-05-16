@@ -1,29 +1,55 @@
 #include "kernels.cuh"
 
+__device__ void enforce_BC_device(double *d_Ht, double *d_HUt, double *d_HVt,
+	int nx, int x, int y){
+	if(x == 0		){
+		d_Ht [y * (nx) + x]  = d_Ht [y		* (nx) + x+1];
+		d_HUt[y * (nx) + x]  = d_HUt[y 		* (nx) + x+1];
+		d_HVt[y * (nx) + x]  = d_HVt[y 		* (nx) + x+1];
+	}
+	__syncthreads();
+	if(x == nx-1){
+		d_Ht [y * (nx) + x]  = d_Ht [y 		* (nx) + x-1];
+		d_HUt[y * (nx) + x]  = d_HUt[y 		* (nx) + x-1];
+		d_HVt[y * (nx) + x]  = d_HVt[y 		* (nx) + x-1];
+	}
+	__syncthreads();
+	if(y == 0		){
+		d_Ht [y * (nx) + x]  = d_Ht [(y+1)* (nx) + x	];
+		d_HUt[y * (nx) + x]  = d_HUt[(y+1)* (nx) + x	];
+		d_HVt[y * (nx) + x]  = d_HVt[(y+1)* (nx) + x	];
+	}
+	__syncthreads();
+	if(y == nx-1){
+		d_Ht [y * (nx) + x]  = d_Ht [(y-1)* (nx) + x	];
+		d_HUt[y * (nx) + x]  = d_HUt[(y-1)* (nx) + x	];
+		d_HVt[y * (nx) + x]  = d_HVt[(y-1)* (nx) + x	];
+	}
+	__syncthreads();
+}
+
 __global__ void FV_time_step_kernel(double *d_H, double *d_HU, double *d_HV,
 const double *d_Zdx, const double *d_Zdy, double *d_Ht, double *d_HUt,
 double *d_HVt, double C, double dt, int nx){
 
 	unsigned int idx = threadIdx.x + blockIdx.x*blockDim.x;
-	unsigned int x = idx/nx;
-	unsigned int y = idx%nx;
+	unsigned int y = idx/nx;
+	unsigned int x = idx%nx;
 
 	//Check if the thread is inside the domain
-	if(x < nx and y < nx){
+	//if(x < nx and y < nx){
 		//COPY LAST STATE IN TEMPORARY VARIABLES
-		if(x < nx and y < nx){
+		/*
 			d_Ht[idx] 	= d_H[idx];
-			d_HUt[idx]	= d_HUt[idx];
-			d_HVt[idx]	= d_HVt[idx];
-		}
+			d_HUt[idx]	= d_HU[idx];
+			d_HVt[idx]	= d_HV[idx];
+		*/
 		__syncthreads();
 
 		//ENFORCE BC
-		if(x == 0 or x == nx-1 or y == 0 or y == nx-1){
-			d_Ht [y * (nx) + x]  = d_Ht [y * (nx) + x];
-			d_HUt[y * (nx) + x]  = d_HUt[y * (nx) + x];
-			d_HVt[y * (nx) + x]  = d_HVt[y * (nx) + x];
-		}
+		enforce_BC_device(d_Ht,d_HUt,d_HVt,nx,x,y);
+
+
 		__syncthreads();
 
 		//FINITE VOLUME STEP
@@ -59,6 +85,7 @@ double *d_HVt, double C, double dt, int nx){
 		__syncthreads();
 
 		//IMPOSING TOLERANCES
+/*
 		if(d_Ht[idx]<0){
 			d_Ht[idx] = 1e-5;
 		}
@@ -66,50 +93,22 @@ double *d_HVt, double C, double dt, int nx){
 			d_HUt[idx] = 0;
 			d_HVt[idx] = 0;
 		}
+*/
 	}
 }
 
-__global__ void find_maximum_device(double *array, double *max, int *mutex, unsigned int numElements)
+__device__ void find_maximum_device(double *array, double *max, int *mutex,
+unsigned int numElements)
 {
+	unsigned int modifiedgridDim = gridDim.x;
 	unsigned int index = threadIdx.x + blockIdx.x*blockDim.x;
-	if(index<numElements){
-		unsigned int stride = gridDim.x*blockDim.x;
-		unsigned int offset = 0;
-		__shared__ double cache[256];
-		double temp = -1.0;
-		while(index + offset < numElements){
-			temp = fmaxf(temp, array[index + offset]);
-			offset += stride;
-		}
-		cache[threadIdx.x] = temp;
-		__syncthreads();
-		// reduction
-		unsigned int i = blockDim.x/2;
-		while(i != 0){
-			if(threadIdx.x < i){
-				cache[threadIdx.x] = fmaxf(cache[threadIdx.x], cache[threadIdx.x + i]);
-			}
-			__syncthreads();
-			i /= 2;
-		}
-		if(threadIdx.x == 0){
-			while(atomicCAS(mutex,0,1) != 0);  //lock
-			*max = fmaxf(*max, cache[0]);
-			atomicExch(mutex, 0);  //unlock
-		}
-	}
-}
+	unsigned int stride 					= modifiedgridDim*blockDim.x;
 
-__global__ void find_maximum_kernel(double *array, double *max, int *mutex, unsigned int numElements)
-{
-	unsigned int index = threadIdx.x + blockIdx.x*blockDim.x;
-	unsigned int stride = gridDim.x*blockDim.x;
-	unsigned int offset = 0;
 	__shared__ double cache[256];
-	double temp = -1.0;
-	while(index + offset < numElements){
-		temp = fmaxf(temp, array[index + offset]);
-		offset += stride;
+	double temp 									= -1.0;
+
+	for(int i = index; i<numElements; i += stride){
+		temp = fmaxf(temp, array[i]);
 	}
 	cache[threadIdx.x] = temp;
 	__syncthreads();
@@ -126,10 +125,19 @@ __global__ void find_maximum_kernel(double *array, double *max, int *mutex, unsi
 		while(atomicCAS(mutex,0,1) != 0);  //lock
 		*max = fmaxf(*max, cache[0]);
 		atomicExch(mutex, 0);  //unlock
-	}
+		}
+}
+
+__global__ void find_maximum_kernel(double *array, double *max, int *mutex, unsigned int numElements)
+{
+//	unsigned int index = threadIdx.x + blockIdx.x*blockDim.x;
+//	if(index % 2 == 0 and index < numElements){
+		find_maximum_device(array,max,mutex,numElements);
+//	}
 }
 
 
+/*
 __device__ void update_dt_kernel(const double *H, const double *HU, const double *HV,
                                  double* dt,      double dx,        int numElements){
    //Compute the max of mu and give dt back
@@ -143,4 +151,19 @@ __device__ void update_dt_kernel(const double *H, const double *HU, const double
        }
      }
      *dt = dx/(sqrt(2.0)*mu);
+}
+*/
+
+void copy_host2device(double * d_Ht,double * d_HUt,double * d_HVt,double * Ht,
+double * HUt,double * HVt,size_t memsize){
+  cudaMemcpy(d_Ht,   Ht,    memsize,  cudaMemcpyHostToDevice);
+  cudaMemcpy(d_HUt,  HUt,   memsize,  cudaMemcpyHostToDevice);
+  cudaMemcpy(d_HVt,  HVt,   memsize,  cudaMemcpyHostToDevice);
+}
+
+void copy_device2host(double * H,double * HU,double * HV,double * d_H,
+double * d_HU,double * d_HV,size_t memsize){
+  cudaMemcpy(H,     d_H,  memsize,  cudaMemcpyDeviceToHost);
+  cudaMemcpy(HU,    d_HU, memsize,  cudaMemcpyDeviceToHost);
+  cudaMemcpy(HV,    d_HV, memsize,  cudaMemcpyDeviceToHost);
 }

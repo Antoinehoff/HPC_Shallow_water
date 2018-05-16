@@ -1,0 +1,9 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Presentation\040of\040the\040sequential\040C++\040code}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Sequential\040Algorithm}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Validation}{section.2}% 4
+\BOOKMARK [2][-]{subsection.2.3}{Performance\040comparison}{section.2}% 5
+\BOOKMARK [2][-]{subsection.2.4}{Computing\040time\040analysis}{section.2}% 6
+\BOOKMARK [1][-]{section.3}{Parallelism\040Preview\040with\040CUDA}{}% 7
+\BOOKMARK [2][-]{subsection.3.1}{Parallelization\040of\040FV_time_step}{section.3}% 8
+\BOOKMARK [2][-]{subsection.3.2}{Parallelization\040of\040new_dt}{section.3}% 9

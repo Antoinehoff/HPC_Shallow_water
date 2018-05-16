@@ -18,10 +18,10 @@ int main(){
   int     Size        = 500;                          // Size of map, Size*Size [km]
   size_t  nx          = 2001;                         // Grid 1D size
   float   Tend        = 0.2;                          // Simulation time in hours [hr]
-  double  dx          = ((float)Size)/((float)nx);    // Grid spacening
+  double  dx          = ((double)Size)/((double)nx);    // Grid spacening
   int     numElements = nx*nx;                        // Total number of elements
   size_t  memsize     = numElements * sizeof(double); // Memory size of one array
-  int     Ntmax       = 250;                            // Choose the maximum of iteration
+  int     Ntmax       = 100;                            // Choose the maximum of iteration
   // Simulation variables HOST
   double  T           = 0.0;                          // Time
   int     nt          = 0;                            // Iteration counter
@@ -90,16 +90,24 @@ int main(){
         cout  << " Computing for T=" << T+dt << " ("<< 100*(T+dt)/Tend << "%), "
               <<  "dt="             << dt   << endl;
         // Copy solution to temp storage and enforce boundary condition
-        //cpy_to(Ht,H,numElements);
-        //cpy_to(HUt,HU,numElements);
-        //cpy_to(HVt,HV,numElements);
+        cpy_to(Ht,H,numElements);
+        cpy_to(HUt,HU,numElements);
+        cpy_to(HVt,HV,numElements);
+
+copy_host2device(d_H,d_HU,d_HV,H,HU,HV,memsize);
+copy_host2device(d_Ht,d_HUt,d_HVt,Ht,HUt,HVt,memsize);
+
         //enforce_BC(Ht, HUt, HVt, nx);
         // Compute a time-step
         C = (.5*dt/dx);
         //FV_time_step(H,HU,HV,Zdx,Zdy,Ht,HUt,HVt,C,dt,nx);
         FV_time_step_kernel<<<Nblockx,Nthreadx>>>(d_H,d_HU,d_HV,d_Zdx,d_Zdy,d_Ht,d_HUt,d_HVt,C,dt,nx);
+
+copy_device2host(H,HU,HV,d_H,d_HU,d_HV,memsize);
+copy_device2host(Ht,HUt,HVt,d_Ht,d_HUt,d_HVt,memsize);
+
         // Impose tolerances
-        //impose_tolerances(Ht,HUt,HVt,numElements);
+        impose_tolerances(Ht,HUt,HVt,numElements);
         if(nt < Ntmax) dt_array[nt]=dt;
         T = T + dt;
         nt++;
