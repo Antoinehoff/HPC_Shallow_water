@@ -10,7 +10,7 @@
 
 
 void test_max(){
-  cout << "\t -----\tTesting maximum CUDA function\t-----\t" << '\n';
+  //cout << "\t -----\tTesting maximum CUDA function\t-----\t" << '\n';
   int numElements   = 2001*2001;
   size_t memsize    = numElements * sizeof(double);
   double CPU_answer = -1;
@@ -35,19 +35,22 @@ void test_max(){
   cudaMalloc((void **)&d_mutex, sizeof(int));
 	cudaMemset(d_mutex, 0, sizeof(float));
 
-  int threadsPerBlock = 128;
-  int blocksPerGrid   = 256;//(numElements + threadsPerBlock - 1)/threadsPerBlock;
-  cout << "blocksPerGrid x threadsPerBlock :" << threadsPerBlock << " x "
-       << blocksPerGrid << " (= " << threadsPerBlock * blocksPerGrid  << ")\n";
+  cudaMemcpy(d_A, h_A, memsize, cudaMemcpyHostToDevice);
+
   float gpu_elapsed_time;
   cudaEvent_t gpu_start, gpu_stop;
+  int i = 7;
+  //for( i = 0; i<15; ++i){
   cudaEventCreate(&gpu_start);
   cudaEventCreate(&gpu_stop);
 
-  cudaMemcpy(d_A, h_A, memsize, cudaMemcpyHostToDevice);
+  int Nthreadx = 256;
+  dim3 threadsPerBlock(Nthreadx);
+  int Nblockx = pow(2,i);//ceil(nx*nx*1.0/Nthreadx)/2;
+  dim3 numBlocks(Nblockx);
 
   cudaEventRecord(gpu_start, 0);
-  find_maximum_kernel<<<threadsPerBlock,blocksPerGrid>>>(d_A, d_answer, d_mutex, numElements);
+  find_maximum_kernel<<<numBlocks,threadsPerBlock>>>(d_A, d_answer, d_mutex, numElements);
   cudaEventRecord(gpu_stop, 0);
 
   cudaMemcpy(GPU_answer, d_answer, sizeof(double), cudaMemcpyDeviceToHost);
@@ -57,6 +60,10 @@ void test_max(){
 	cudaEventDestroy(gpu_start);
 	cudaEventDestroy(gpu_stop);
 
+//  std::cout << Nblockx << "\t" << gpu_elapsed_time << std::endl;
+if(true){
+  cout << "blocksPerGrid x threadsPerBlock :" << Nthreadx << " x "
+      << Nblockx << " (= " << Nthreadx * Nblockx  << ")\n";
   std::cout  << "The gpu took: "        <<  gpu_elapsed_time      <<  " milli-seconds"  <<  std::endl;
   std::cout  << "The cpu took: "        <<  timer_h               <<  " milli-seconds"  <<  std::endl;
   if(abs(GPU_answer[0]-CPU_answer) < 1e-5){
@@ -67,79 +74,83 @@ void test_max(){
     std::cout  << " CPU Answer : "      <<  CPU_answer            << '\n';
     std::cout  << " GPU Answer : "      <<  GPU_answer[0]           << '\n';
   }
-
-
+//}
+}
   cudaFree(d_A); cudaFree(d_answer); cudaFree(d_mutex);
   free(h_A); free(GPU_answer);
 
 }
 
-void test_update_dt(){
-  cout << "\t -----\tTesting update_dt CUDA function\t-----\t" << '\n';
-  int nx            = 2001;
-  int Size          = 500;
-  double dx         = Size/nx;
-  int numElements   = 2001*2001;
-  size_t memsize    = numElements * sizeof(double);
-  double CPU_dt     = -1;
-
-  double *H         = (double *)malloc(memsize);
-  double *HU        = (double *)malloc(memsize);
-  double *HV        = (double *)malloc(memsize);
-  double *GPU_dt      = (double *)malloc(sizeof(double));
-
-  load_initial_state("../data/Data_nx2001_500km_T0.2_h.bin",  H,  numElements);
-  load_initial_state("../data/Data_nx2001_500km_T0.2_hu.bin", HU, numElements);
-  load_initial_state("../data/Data_nx2001_500km_T0.2_hv.bin", HV, numElements);
-
-  clock_t timer_h;
-  timer_h   =clock();
-  CPU_dt    = update_dt(H,HU,HV,dx,numElements);
-  timer_h   = clock()-timer_h;
-  timer_h   = (double) timer_h/CLOCKS_PER_SEC*1000.0;
-
-  double *d_H, *d_HU, *d_HV, *d_dt;
-  cudaMalloc((void **)&d_H,memsize);
-  cudaMalloc((void **)&d_HU,memsize);
-  cudaMalloc((void **)&d_HV,memsize);
-  cudaMalloc((void **)&d_dt,sizeof(double));
-
-  int threadsPerBlock = 256;
-  int blocksPerGrid   = ceil(numElements*1.0/256);//(numElements + threadsPerBlock - 1)/threadsPerBlock;
-  cout << "blocksPerGrid x threadsPerBlock :" << threadsPerBlock << " x "
-       << blocksPerGrid << " (= " << threadsPerBlock * blocksPerGrid  << ")\n";
-  float gpu_elapsed_time;
-  cudaEvent_t gpu_start, gpu_stop;
-  cudaEventCreate(&gpu_start);
-  cudaEventCreate(&gpu_stop);
-
-  cudaMemcpy(d_H,  H,  memsize, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_HU, HU, memsize, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_HV, HV, memsize, cudaMemcpyHostToDevice);
-
-  cudaEventRecord(gpu_start, 0);
-  //update_dt_kernel<<<threadsPerBlock,blocksPerGrid>>>(d_H, d_HU, d_HV, d_dt, dx, numElements);
-  cudaEventRecord(gpu_stop, 0);
-
-  cudaMemcpy(GPU_dt, d_dt, sizeof(double), cudaMemcpyDeviceToHost);
-
-	cudaEventSynchronize(gpu_stop);
-	cudaEventElapsedTime(&gpu_elapsed_time, gpu_start, gpu_stop);
-	cudaEventDestroy(gpu_start);
-	cudaEventDestroy(gpu_stop);
-
-  std::cout  << "The gpu took: "        <<  gpu_elapsed_time      <<  " milli-seconds"  <<  std::endl;
-  std::cout  << "The cpu took: "        <<  timer_h               <<  " milli-seconds"  <<  std::endl;
-  if(abs(GPU_dt[0] - CPU_dt) < 1e-5){
-    std::cout <<  "Test PASSED "        << '\n';
-  }
-  else{
-    std::cout <<  "Test FAILED "        << '\n';
-    std::cout  << " CPU Answer : "      <<  CPU_dt              << '\n';
-    std::cout  << " GPU Answer : "      <<  GPU_dt[0]           << '\n';
+void test_enforce_bc(int Nblocks, int Nthreads){
+  int nx = 10;
+  int numElements = nx*nx;
+  double *original_array = (double *)malloc(numElements*sizeof(double));
+  double *GPU_result_array   = (double *)malloc(numElements*sizeof(double));
+  double *CPU_result_array   = (double *)malloc(numElements*sizeof(double));
+  int x,y;
+  for(int i=0; i<numElements; i++){
+    x = i%nx;
+    y = i/nx;
+    if(x == 0 or x == nx-1 or y == 0 or y == nx-1){
+      original_array[y*nx+x] = 0.0;
+    }
+    else{original_array[y*nx+x] = 1;}
   }
 
+  int offset = 0;
+  int numthread = 50;
+  for(int i=0;i<numthread; i++){
+        y = (i+offset)/nx+1;
+        x = (i+offset)%nx+1;
+    while(x < nx-1 and y < nx-1){
+      original_array[y*nx+x] = y*nx+x;
+      offset += numthread;
+      y = (i+offset)/nx+1;
+      x = (i+offset)%nx+1;
+    }
+    offset = 0;
+  }
 
-  cudaFree(d_H); cudaFree(d_HU); cudaFree(d_HV); cudaFree(d_dt);
-  free(H); free(HU); free(HV); free(GPU_dt);
+  cpy_to(CPU_result_array,original_array,nx*nx);
+  enforce_BC(CPU_result_array,CPU_result_array,CPU_result_array,nx);
+
+  double *d_array;
+  cudaMalloc((void **) &d_array, numElements*sizeof(double));
+  cudaMemcpy(d_array, original_array, numElements*sizeof(double), cudaMemcpyHostToDevice);
+
+  call_enforce_BC_kernel<<<Nblocks,Nthreads>>>(d_array,d_array,d_array,nx);
+
+  cudaMemcpy(GPU_result_array, d_array, numElements*sizeof(double), cudaMemcpyDeviceToHost);
+  cudaFree(d_array);
+
+  std::cout << "\t\t\t----- Original test array -----\t" << '\n';
+  for(int iy=0; iy<nx; iy++){
+    for(int ix=0; ix<nx; ix++){
+      cout << original_array[iy*nx+ix] << "\t";
+    }
+    cout<<endl;
+  }
+  std::cout << "\t\t\t----- CPU Result array -----\t" << '\n';
+  for(int iy=0; iy<nx; iy++){
+    for(int ix=0; ix<nx; ix++){
+      cout << CPU_result_array[iy*nx+ix] << "\t";
+    }
+    cout<<endl;
+  }
+  std::cout << "\t\t\t----- GPU Result array -----\t" << '\n';
+  for(int iy=0; iy<nx; iy++){
+    for(int ix=0; ix<nx; ix++){
+      cout << GPU_result_array[iy*nx+ix] << "\t";
+    }
+    cout<<endl;
+  }
+    std::cout << "\t\t\t----- Error array -----\t" << '\n';
+    for(int iy=0; iy<nx; iy++){
+      for(int ix=0; ix<nx; ix++){
+        cout << CPU_result_array[iy*nx+ix]-GPU_result_array[iy*nx+ix] << "\t";
+      }
+      cout<<endl;
+    }
+  free(original_array);
+  free(GPU_result_array);
 }

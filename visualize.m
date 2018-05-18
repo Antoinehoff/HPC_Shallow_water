@@ -1,5 +1,4 @@
-
-clear all, close all; clc; addpath('data/');
+addpath('data/');
 
 %% Set initial condition
 

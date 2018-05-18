@@ -17,7 +17,7 @@ string datapath,int nx,int Size,float Tend,int numElements);
 void load_initial_state(string filename, double * H, int numElements);
 
 double update_dt(const double *H, const double *HU,
-                 const double *HV, double dx, int numElements);
+                 const double *HV,double *dt, double dx, int numElements);
 
 void cpy_to(double *target, const double *source, int numElements);
 

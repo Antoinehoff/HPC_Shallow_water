@@ -12,7 +12,7 @@ fmatlab = path + "Matlab_" + fname;
 fcpp    = path + "Cpp_"    + fname;
 fcuda   = path + "CUDA_"   + fname;
 
-filename = ['data/Data_nx',num2str(nx),'_',num2str(Size),'km_T',num2str(Tend)]
+filename = ['data/Data_nx',num2str(nx),'_',num2str(Size),'km_T',num2str(Tend)];
 Hinit    = fread(fopen([filename,'_h.bin'],'r'),[nx,nx],'double');
 Hmatlab  = fread(fopen(fmatlab,'r'),[nx,nx],'double');
 Hcpp     = fread(fopen(fcpp,'r'),   [nx,nx],'double');
@@ -21,7 +21,7 @@ Hcuda    = fread(fopen(fcuda,'r'),  [nx,nx],'double');
 %% Plot error
 Err_cuda_cpp    = Hcuda-Hcpp;
 Err_matlab_cpp  = Hmatlab-Hcpp;
-Err_matlab_cuda = Hmatlab-Hcuda;
+Err_cuda_matlab = Hcuda-Hmatlab;
 figure
 surf(Err_cuda_cpp,'EdgeColor','none');
 title("Error between CUDA and C++")
@@ -35,13 +35,13 @@ xlabel('x')
 ylabel('y')
 
 figure
-surf(Err_matlab_cuda,'EdgeColor','none')
+surf(Err_cuda_matlab,'EdgeColor','none')
 title("Error between Matlab and CUDA")
 xlabel('x')
 ylabel('y')
 
 %% Dt historic analysis
-% Load dt_arrays
+%Load dt_arrays
 Nmax = 100;
 fname   = "dt_nx"+num2str(nx)+"_500km_T0.2_h.bin";
 path    = "output/";
@@ -51,7 +51,7 @@ fcuda_dt    = path + "CUDA_" + fname;
 dt_matlab = fread(fopen(fmatlab_dt,'r'),Nmax,'double');
 dt_cpp = fread(fopen(fcpp_dt,'r'),Nmax,'double');
 dt_cuda = fread(fopen(fcuda_dt,'r'),Nmax,'double');
-
+% 
 figure
 subplot(221)
 hold on;

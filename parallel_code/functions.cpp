@@ -40,7 +40,7 @@ void load_initial_state(string filename, double * H, int numElements){
 }
 
 double update_dt(const double *H, const double *HU,
-                 const double *HV, double dx, int numElements){
+                 const double *HV, double *dt, double dx, int numElements){
   //Compute the max of mu and give dt back
   double mu = 0.0;
   double newmu = 0.0;
@@ -51,7 +51,7 @@ double update_dt(const double *H, const double *HU,
       mu = newmu;
       }
     }
-    return dx/(sqrt(2.0)*mu);
+    dt[0] = dx/(sqrt(2.0)*mu);
   }
 
 void cpy_to(double *target, const double *source, int numElements){
@@ -65,7 +65,7 @@ int to_idx(int x, int y, int nx){
 }
 
 void enforce_BC(double *Ht, double *HUt, double *HVt, int nx){
-  
+
   for(int i=0; i<nx; ++i){
     Ht  [to_idx(0,    i,    nx)] = Ht  [to_idx(1,     i,    nx)];
     HUt [to_idx(0,    i,    nx)] = HUt [to_idx(1,     i,    nx)];
@@ -88,10 +88,9 @@ void enforce_BC(double *Ht, double *HUt, double *HVt, int nx){
   }
 }
 
-void FV_time_step( double *H,        double *HU,        double *HV,
-               const double *Zdx, const double *Zdy,
-               const double *Ht,  const double *HUt, const double *HVt,
-               double C,          double dt,         int nx){
+void FV_time_step( double *H, double *HU,double *HV,const double *Zdx,
+                  const double *Zdy,const double *Ht,  const double *HUt,
+                  const double *HVt,double C,double dt,int nx){
   for(int x=1; x<nx-1; x++){
     for(int y=1; y<nx-1; y++){
       H[to_idx(x,y,nx)]=
